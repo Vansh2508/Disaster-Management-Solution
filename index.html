@@ -1,0 +1,279 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLOF Early Warning System - Lake Overlay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <h1 class="header-title">🌊 GLOF Early Warning System</h1>
+                <div class="system-status">
+                    <span class="status-indicator" id="systemStatus">
+                        <div class="status-dot status-dot--active"></div>
+                        System Active
+                    </span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn--outline" id="configBtn">⚙️ Configure</button>
+                <button class="btn btn--primary" id="demoBtn">🚨 Demo Mode</button>
+                <div class="time-display" id="currentTime"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="dashboard-grid">
+            <!-- Left Panel - Overview and Interactive Map -->
+            <div class="left-panel">
+                <!-- Overview Cards -->
+                <div class="overview-cards">
+                    <div class="card metric-card">
+                        <div class="metric-icon">📊</div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="totalStations">4</div>
+                            <div class="metric-label">Total Lakes</div>
+                        </div>
+                    </div>
+                    <div class="card metric-card">
+                        <div class="metric-icon">✅</div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="activeStations">4</div>
+                            <div class="metric-label">Monitored Lakes</div>
+                        </div>
+                    </div>
+                    <div class="card metric-card">
+                        <div class="metric-icon">⚠️</div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="criticalAlerts">1</div>
+                            <div class="metric-label">Critical Alerts</div>
+                        </div>
+                    </div>
+                    <div class="card metric-card">
+                        <div class="metric-icon">🌊</div>
+                        <div class="metric-info">
+                            <div class="metric-value" id="totalArea">3.9 km²</div>
+                            <div class="metric-label">Total Lake Area</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lake Selector -->
+                <div class="card lake-selector">
+                    <div class="card-header">
+                        <h3>Lake Selection</h3>
+                        <div class="view-controls">
+                            <button class="btn btn--sm btn--outline" id="viewAllLakes">🌍 View All</button>
+                            <button class="btn btn--sm btn--outline" id="refreshMap">🔄 Refresh</button>
+                        </div>
+                    </div>
+                    <div class="lake-selector-grid">
+                        <button class="lake-button" data-lake="palcacocha">
+                            <div class="lake-preview">
+                                <span class="lake-icon">🏔️</span>
+                                <div class="lake-info">
+                                    <div class="lake-name">Lake Palcacocha</div>
+                                    <div class="lake-status status--normal">Normal</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button class="lake-button" data-lake="tsho_rolpa">
+                            <div class="lake-preview">
+                                <span class="lake-icon">⚠️</span>
+                                <div class="lake-info">
+                                    <div class="lake-name">Tsho Rolpa Lake</div>
+                                    <div class="lake-status status--warning">Warning</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button class="lake-button" data-lake="dig_tsho">
+                            <div class="lake-preview">
+                                <span class="lake-icon">🏔️</span>
+                                <div class="lake-info">
+                                    <div class="lake-name">Dig Tsho Lake</div>
+                                    <div class="lake-status status--normal">Normal</div>
+                                </div>
+                            </div>
+                        </button>
+                        <button class="lake-button" data-lake="imja_tsho">
+                            <div class="lake-preview">
+                                <span class="lake-icon">🚨</span>
+                                <div class="lake-info">
+                                    <div class="lake-name">Imja Tsho Lake</div>
+                                    <div class="lake-status status--critical">Critical</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interactive World Map -->
+                <div class="card map-container">
+                    <div class="card-header">
+                        <h3>Glacial Lake Overlay Map</h3>
+                        <div class="layer-controls">
+                            <label class="layer-toggle">
+                                <input type="checkbox" id="showLakes" checked> Lake Overlays
+                            </label>
+                            <label class="layer-toggle">
+                                <input type="checkbox" id="showRiskZones" checked> Risk Zones
+                            </label>
+                            <label class="layer-toggle">
+                                <input type="checkbox" id="showLabels" checked> Lake Labels
+                            </label>
+                        </div>
+                    </div>
+                    <div class="map-wrapper">
+                        <div id="worldMap" class="leaflet-map"></div>
+                        <div class="map-legend">
+                            <h4>Lake Risk Levels</h4>
+                            <div class="legend-item">
+                                <div class="legend-lake legend-lake--normal"></div>
+                                <span>Normal</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-lake legend-lake--warning"></div>
+                                <span>Warning</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-lake legend-lake--critical"></div>
+                                <span>Critical</span>
+                            </div>
+                            <div class="legend-divider"></div>
+                            <div class="legend-item">
+                                <div class="legend-risk-zone"></div>
+                                <span>Risk Zone</span>
+                            </div>
+                        </div>
+                        <div class="map-info">
+                            <div id="mapCoordinates"></div>
+                            <div id="mapZoom">Zoom: 6</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Lake Details and Monitoring -->
+            <div class="right-panel">
+                <!-- Lake Details -->
+                <div class="card lake-details" id="lakeDetails">
+                    <div class="card-header">
+                        <h3 id="lakeName">Select a Lake</h3>
+                        <div class="lake-risk-level" id="lakeRiskLevel"></div>
+                    </div>
+                    <div class="card-body">
+                        <div id="lakeInfo" class="lake-info-panel">
+                            <div class="lake-empty">
+                                <p>Click on a lake overlay or use the lake selector to view detailed information about glacial lake conditions and monitoring data</p>
+                            </div>
+                        </div>
+                        <div class="sensor-grid" id="sensorData">
+                            <div class="sensor-empty">
+                                <p>Real-time sensor data will appear here when a lake is selected</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Alerts -->
+                <div class="card alerts-panel">
+                    <div class="card-header">
+                        <h3>Recent Alerts</h3>
+                        <button class="btn btn--sm btn--outline" id="clearAlerts">Clear All</button>
+                    </div>
+                    <div class="alerts-list" id="alertsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="card chart-container">
+                <div class="card-header">
+                    <h3>Real-time Lake Monitoring Data</h3>
+                    <div class="chart-controls">
+                        <select class="form-control" id="chartStation">
+                            <option value="palcacocha">Lake Palcacocha</option>
+                            <option value="tsho_rolpa">Tsho Rolpa Lake</option>
+                            <option value="dig_tsho">Dig Tsho Lake</option>
+                            <option value="imja_tsho">Imja Tsho Lake</option>
+                        </select>
+                        <select class="form-control" id="timeRange">
+                            <option value="1">Last Hour</option>
+                            <option value="6">Last 6 Hours</option>
+                            <option value="24">Last 24 Hours</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-area" style="position: relative; height: 300px;">
+                    <canvas id="dataChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Configuration Modal -->
+    <div class="modal hidden" id="configModal">
+        <div class="modal-overlay" id="configOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Alert Configuration</h3>
+                <button class="modal-close" id="closeConfig">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="config-section">
+                    <h4>Water Level Thresholds</h4>
+                    <div class="threshold-controls">
+                        <label class="form-label">Warning Level (cm)</label>
+                        <input type="range" class="threshold-slider" id="waterWarning" min="50" max="100" value="70">
+                        <span class="threshold-value">70 cm</span>
+                    </div>
+                    <div class="threshold-controls">
+                        <label class="form-label">Critical Level (cm)</label>
+                        <input type="range" class="threshold-slider" id="waterCritical" min="60" max="120" value="85">
+                        <span class="threshold-value">85 cm</span>
+                    </div>
+                </div>
+                <div class="config-section">
+                    <h4>Seismic Activity Thresholds</h4>
+                    <div class="threshold-controls">
+                        <label class="form-label">Warning Level (magnitude)</label>
+                        <input type="range" class="threshold-slider" id="seismicWarning" min="0.5" max="3.0" step="0.1" value="1.5">
+                        <span class="threshold-value">1.5</span>
+                    </div>
+                    <div class="threshold-controls">
+                        <label class="form-label">Critical Level (magnitude)</label>
+                        <input type="range" class="threshold-slider" id="seismicCritical" min="1.0" max="4.0" step="0.1" value="2.0">
+                        <span class="threshold-value">2.0</span>
+                    </div>
+                </div>
+                <div class="config-actions">
+                    <button class="btn btn--outline" id="resetDefaults">Reset to Defaults</button>
+                    <button class="btn btn--primary" id="saveConfig">Save Configuration</button>
+                    <button class="btn btn--primary" id="testAlert">Test Alert</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Notifications Container -->
+    <div class="alert-notifications" id="alertNotifications"></div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-spinner hidden" id="loadingSpinner">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
